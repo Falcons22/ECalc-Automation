@@ -5,19 +5,19 @@ from time import sleep
 from bs4 import BeautifulSoup
 import pandas as pd
 import csv
-import sys
-
+from check import thrust_at_750
+ 
 USERNAME = "falconsofficial@gmail.com"
 PASSWORD = "lg7x6ie"
 propeller_range = list(range(18, 23))  # in inches
 pitch_range = list(range(8, 13))
-
+ 
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--incognito")
-
+ 
 driver = webdriver.Chrome(options=chrome_options)
-
-
+ 
+ 
 def login():
     driver.get(
         "https://www.ecalc.ch/calcmember/login.php?https://www.ecalc.ch/calcmember/signup.php")
@@ -31,79 +31,77 @@ def login():
     sleep(1)
     alert.accept()
     print("Logged in using Falcons id")
-
-
+ 
+ 
 login()
 driver.get("https://www.ecalc.ch/motorcalc.php")
 sleep(3)
-
-
+ 
+ 
 modelweight = driver.find_element_by_id("inGWeight")
 for i in range(3):
     modelweight.send_keys(Keys.BACKSPACE)
 modelweight.send_keys('18000')
-
+ 
 wingspan = driver.find_element_by_id("inGWingSpan")
 for i in range(4):
     wingspan.send_keys(Keys.BACKSPACE)
 wingspan.send_keys('2540')
-
+ 
 wingarea = driver.find_element_by_id("inGWingArea")
 for i in range(2):
     wingarea.send_keys(Keys.BACKSPACE)
 wingarea.send_keys('210')
-
+ 
 fieldelevation = driver.find_element_by_id("inGElevation")
 for i in range(3):
     fieldelevation.send_keys(Keys.BACKSPACE)
 fieldelevation.send_keys('199')
-
+ 
 batterytype = driver.find_element_by_id("inBCell")
 batteryfile = open('battery.txt')
 batterylist = batteryfile.read().split('\n')
-
+ 
 batteryconfig = driver.find_element_by_id("inBS")
 for i in range(1):
     batteryconfig.send_keys(Keys.BACKSPACE)
 batteryconfig.send_keys('6')
-
+ 
 esctype = driver.find_element_by_id("inEType")
 esctype.send_keys('max 120A')
-
+ 
 batteryextensionwire = driver.find_element_by_id("inEBatLength")
 batteryextensionwire.send_keys(Keys.BACKSPACE)
 batteryextensionwire.send_keys('150')
-
+ 
 motorextensionwire = driver.find_element_by_id("inEMotLength")
 motorextensionwire.send_keys(Keys.BACKSPACE)
 motorextensionwire.send_keys('50')
-
+ 
 motormanufacturer = driver.find_element_by_id("inMManufacturer")
-
+ 
 motorcooling = driver.find_element_by_id("inGMotorCooling")
 motorcooling.send_keys("good")
-
+ 
 motortype = driver.find_element_by_id("inMType")
-
-
+ 
+ 
 proptype = driver.find_element_by_id("inPType")
 propdiameter = driver.find_element_by_id("inPDiameter")
 proppitch = driver.find_element_by_id("inPPitch")
 flightspeed = driver.find_element_by_id("inPSpeed")
 flightspeed.send_keys(Keys.BACKSPACE)
 flightspeed.send_keys("47.8")
-
+ 
 motorlist = []
 with open('prop1.csv') as file:
     reader = csv.reader(file)
     for row in reader:
         motorlist.append((row[0], row[1]))
-
-
+ 
+ 
 list_header = ['Propeller','Throttle','Current (DC)','Voltage (DC)','el. Power','Efficiency','Thrust','Spec. Thrust','Pitch Speed','Speed (level)','Motor Run Time']
-
-
-
+ 
 for motor in motorlist:
     data = []
     motormanufacturer.send_keys(motor[0])
@@ -142,10 +140,17 @@ for motor in motorlist:
                         del sub_data[9]
                         del sub_data[10]
                         data.append(sub_data)
-                        #print(sub_data)
-                    batteryname='-'.join(battery.split('/'))
-                    dataFrame = pd.DataFrame(data = data, columns = list_header)
+                batteryname='-'.join(battery.split('/'))      
+                dataFrame = pd.DataFrame(data = data, columns = list_header)
+                thrust = thrust_at_750(dataFrame)
+                thrust_to_weight=thrust/18000
+                if(thrust_to_weight<0.28):
+                    print(f'Rejected: results/{motor[1]}_{batteryname}_{diameter}_{pitch}.csv, thrust={thrust}, t:w={thrust_to_weight}')
+                else:
+                    print(f'Accepted: results/{motor[1]}_{batteryname}_{diameter}_{pitch}.csv, thrust={thrust}, t:w={thrust_to_weight}')
                     dataFrame.to_csv(f'results/{motor[1]}_{batteryname}_{diameter}_{pitch}.csv')
-
-# sleep(10)
-# driver.quit()
+                
+                
+ 
+sleep(10)
+driver.quit()
