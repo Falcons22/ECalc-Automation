@@ -16,7 +16,7 @@ def thrust_at_750(df):
             y2=float(thrust[i+1])
             x2=float(power[i+1])
     #print(x1,x2,y1,y2)
-    thrust_750=-((y2-y1)/(x2-x1)*(750-x1)-y1)
+    thrust_750=((y2-y1)/(x2-x1)*(750-x1)+y1)
     return thrust_750
 
 
